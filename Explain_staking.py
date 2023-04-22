@@ -9,10 +9,9 @@ from  joblib import dump, load
 from sklearn.tree import export_graphviz
 from graphviz import Source
 import shap
-from shap import links
 
 
-x_train, x_test, y_train, y_test, feature_names = Read_data.data(
+x_train, x_test, y_train, y_test, feature_names1 = Read_data.data(
         csv_path=r'E:\结直肠癌研究\abc\com_patient_sample_mrna.csv',
         selected_feature_name_same_path=r'E:\结直肠癌研究\50_selected_feature_name_same.csv',
         selected_feature_name_diff_path=r'E:\结直肠癌研究\selected_feature_num_50\排序后重要度特征排序\importance_paixu_50.csv'

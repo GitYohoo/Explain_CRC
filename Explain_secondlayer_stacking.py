@@ -1,12 +1,10 @@
 #%%
 import numpy as np
 import pandas as pd
-from lime import discretize,lime_tabular
+from lime import lime_tabular, discretize
 from sklearn.metrics import confusion_matrix,classification_report,accuracy_score,f1_score,roc_curve
-from sklearn.model_selection import train_test_split
 import warnings
 warnings.filterwarnings('ignore')
-from sklearn.model_selection import train_test_split   # 数据集划分
 from models import models
 from  joblib import dump, load
 from read_data import Read_data
