@@ -1,0 +1,46 @@
+.lime {
+  all: initial;
+  color: white;
+}
+.lime.top_div {
+  display: flex;
+  flex-wrap: wrap;
+  color:white;
+}
+.lime.predict_proba {
+  width: 245px;
+  color: white;
+}
+.lime.predicted_value {
+  width: 245px;
+  color: white;
+}
+.lime.explanation {
+  width: 350px;
+  color: white;
+}
+
+.lime.text_div {
+  max-height:300px;
+  flex: 1 0 300px;
+  overflow:scroll;
+  color: white;
+}
+.lime.table_div {
+  max-height:300px;
+  flex: 1 0 300px;
+  overflow:scroll;
+  color: white;
+}
+.lime.table_div table {
+  border-collapse: collapse;
+  color: white;
+  border-style: hidden;
+  margin: 0 auto;
+}
+.lime.predict_proba  {
+  border-collapse: collapse;
+  color: white;
+  border-style: hidden;
+  margin: 0 auto;
+}
