@@ -23,7 +23,6 @@ class Read_data(object):
         label = np.array(label) - 1
 
         # 从原始数据中提取特征
-        n_splits = 10  # 十折交叉验证
         pt = 278
 
         xtrain, xtest, y_train, y_test = train_test_split(feature, label, test_size=test_size, stratify=label, random_state=random_state)

@@ -15,21 +15,15 @@ class models(object):
 
 
     def fit_model(self, model_to_fit):
-        for fitted_models in model_to_fit:
-            fitted_models.fit(self.rfe_xtrain_bing_same, self.ytrain)
-
-    def predict_vales(self, fitted_models, test):
-        first_train_label = []
-        first_test_label = []
-        for model in fitted_models:
-            train_label = model.predict(self.rfe_xtrain_bing_same)
-            test_label = model.predict(test)
-            first_train_label.append(train_label)
-            first_test_label.append(test_label)
-        first_train_label = np.array(first_train_label).T
-        first_test_label = np.array(first_test_label).T
-
-        return first_train_label, first_test_label 
+        for model in model_to_fit:
+            model.fit(self.rfe_xtrain_bing_same, self.ytrain)
+        
+def predict_vales(self, fitted_models, test):
+    first_train_label = [model.predict(self.rfe_xtrain_bing_same) for model in fitted_models]
+    first_test_label = [model.predict(test) for model in fitted_models]
+    first_train_label = np.array(first_train_label).T
+    first_test_label = np.array(first_test_label).T
+    return first_train_label, first_test_label
     
     def read_param(self):
         #Stacking第一层当中分类器的设置
