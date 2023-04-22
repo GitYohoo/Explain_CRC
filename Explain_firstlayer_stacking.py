@@ -11,7 +11,7 @@ from models import models
 from read_data import Read_data
 import csv
 
-x_train, x_test, y_train, y_test, feature_names = Read_data.data()
+x_train, x_test, y_train, y_test, feature_names1 = Read_data.data()
 
 #%%第二层解释
 clf = models(x_train, y_train, 2)
