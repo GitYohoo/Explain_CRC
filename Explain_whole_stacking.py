@@ -11,11 +11,7 @@ import os
 
 from read_data import Read_data
 
-x_train, x_test, y_train, y_test, feature_names = Read_data.data(
-        csv_path=r'E:\结直肠癌研究\abc\com_patient_sample_mrna.csv',
-        selected_feature_name_same_path=r'E:\结直肠癌研究\50_selected_feature_name_same.csv',
-        selected_feature_name_diff_path=r'E:\结直肠癌研究\selected_feature_num_50\排序后重要度特征排序\importance_paixu_50.csv'
-    )
+x_train, x_test, y_train, y_test, feature_names = Read_data.data()
 
 #%%
 clf = load('jobmodels\\the2th_clf.joblib')

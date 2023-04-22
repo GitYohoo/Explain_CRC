@@ -9,7 +9,10 @@ class Read_data(object):
     def __init__(self) -> None:
         pass       
 
-    def data(csv_path, selected_feature_name_same_path, selected_feature_name_diff_path, test_size=0.1, random_state=42):
+    def data(csv_path=r'data\com_patient_sample_mrna.csv',
+        selected_feature_name_same_path=r'data\50_selected_feature_name_same.csv',
+        selected_feature_name_diff_path=r'data\importance_paixu_50.csv', 
+        test_size=0.1, random_state=42):
         # 读入原始数据
         df = pd.read_csv(csv_path, header=None, index_col=0)
         data = df.T
