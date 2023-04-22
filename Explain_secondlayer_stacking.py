@@ -17,6 +17,7 @@ x_train, x_test, y_train, y_test, feature_names = Read_data.data(
         selected_feature_name_same_path=r'E:\结直肠癌研究\50_selected_feature_name_same.csv',
         selected_feature_name_diff_path=r'E:\结直肠癌研究\selected_feature_num_50\排序后重要度特征排序\importance_paixu_50.csv'
     )
+#%%
 # for j in range(10):
 #     clf = models(x_train, y_train, j)
 #     xtrain, xtest, secondlayer_model = clf.Stacking(x_test, return_first_labels=True)
