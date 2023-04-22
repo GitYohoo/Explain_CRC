@@ -1,7 +1,7 @@
 #%%
 import numpy as np
 import pandas as pd
-from lime import lime_tabular, discretize
+from libraries.lime import lime_tabular, discretize
 from sklearn.metrics import confusion_matrix,classification_report,accuracy_score,f1_score,roc_curve
 import warnings
 warnings.filterwarnings('ignore')
@@ -181,17 +181,17 @@ print('样本{}的分类结果：{}'.format(i, path))
 
 
 #%%
-import shap
-from shap import links
-shap.initjs()
+import libraries.shap
+from libraries.shap import links
+libraries.shap.initjs()
 # explain the model's predictions using SHAP values
-explainer2 = shap.Explainer(secondlayer_model.predict,test, feature_names=feature_names) 
+explainer2 = libraries.shap.Explainer(secondlayer_model.predict,test, feature_names=feature_names) 
 shap_values = explainer2(test)
 # plot the first prediction's explanation
 # for i in range(len(shap_values)):
 #     shap.plots.waterfall(shap_values[i])
 # shap.plots.force(shap_values)
-shap.plots.waterfall(shap_values[i])
+libraries.shap.plots.waterfall(shap_values[i])
 
 #%%
 import os
@@ -215,7 +215,7 @@ for csv_file in csv_files:
 headers = ['AWNP+','AWNP-','AWP+','AWP-','DWNP+','DWNP-','DWNP+','DWNP-']
 labels_df.to_csv(r'D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\secondlayer\labels.csv', index=False)
 # %% optiLIME
-from lime_stability.stability import LimeTabularExplainerOvr
+from libraries.lime_stability.stability import LimeTabularExplainerOvr
 num_features = 10   #取前10个最重要的特征
 class_names=['AWNP','AWP','DWNP','DWP'] #类别名称
 feature_names = ['SVM', 'LR', 'XGB', 'RF'] #特征名称

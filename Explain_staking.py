@@ -1,5 +1,5 @@
 #%%
-from lime import lime_tabular
+from libraries.lime import lime_tabular
 from sklearn.metrics import confusion_matrix,classification_report,accuracy_score,f1_score,roc_curve
 import warnings
 warnings.filterwarnings('ignore')
@@ -8,7 +8,7 @@ from models import models
 from  joblib import dump, load
 from sklearn.tree import export_graphviz
 from graphviz import Source
-import shap
+import libraries.shap as shap
 
 
 x_train, x_test, y_train, y_test, feature_names1 = Read_data.data()

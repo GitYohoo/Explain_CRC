@@ -1,7 +1,7 @@
 #%%
 import numpy as np
 import pandas as pd
-from lime import discretize,lime_tabular
+from libraries.lime import discretize,lime_tabular
 from sklearn.metrics import confusion_matrix,classification_report,accuracy_score,f1_score,roc_curve
 import warnings
 warnings.filterwarnings('ignore')
