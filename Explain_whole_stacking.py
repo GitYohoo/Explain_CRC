@@ -1,7 +1,7 @@
 #%%
 import numpy as np
 import pandas as pd
-from libraries.lime import discretize,lime_tabular
+from libraries.lime import lime_tabular
 from sklearn.metrics import confusion_matrix,classification_report,accuracy_score,f1_score,roc_curve
 import warnings
 warnings.filterwarnings('ignore')
@@ -14,12 +14,12 @@ from read_data import Read_data
 x_train, x_test, y_train, y_test, feature_names = Read_data.data()
 
 #%%
-clf = load('jobmodels\\the2th_clf.joblib')
+clf = load('jobmodels\\secondlayer_clf.joblib')
 train, test, model = clf.Stacking(x_test, return_first_labels=True)
 proba = model.predict_proba(test)
 test_predict = model.predict(test)
 test_acc = accuracy_score(y_test, test_predict)
-print("这是第2个分类器")
+print("这是第2层分类器")
 print("测试集准确率: {0:.3f}".format(test_acc))
 print(confusion_matrix(y_test,test_predict))
 print(classification_report(y_test,test_predict))

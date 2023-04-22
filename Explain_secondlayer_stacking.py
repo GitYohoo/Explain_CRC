@@ -14,20 +14,6 @@ import csv
 
 x_train, x_test, y_train, y_test, feature_names = Read_data.data()
 #%%
-# for j in range(10):
-#     clf = models(x_train, y_train, j)
-#     xtrain, xtest, secondlayer_model = clf.Stacking(x_test, return_first_labels=True)
-#     # 将训练好的分类器保存到文件中
-#     dump(secondlayer_model, 'jobmodels\\the{}th_secondlayer_clf.joblib'.format(j))
-#     test_predict = clf.Stacking(x_test) #二级模型输出结果标签
-#     proba = clf.proba_value(x_test) #二级模型输出概率
-
-#     test_acc = accuracy_score(y_test, test_predict)
-#     print("这是第{0}个分类器".format(j))  
-#     print("测试集准确率: {0:.3f}".format(test_acc))
-#     print(confusion_matrix(y_test,test_predict))
-#     print(classification_report(y_test,test_predict))
-# secondlayer_model = load('jobmodels\\the2th_secondlayer_clf.joblib') 
 clf = models(x_train, y_train, 2)
 train, test, secondlayer_model = clf.Stacking(x_test, return_first_labels=True)
 proba = secondlayer_model.predict_proba(test)
