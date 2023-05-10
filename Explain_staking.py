@@ -25,7 +25,6 @@ class Explain_stacking(object):
     def __init__(self): 
         pass 
     
-
     def explain_secondlayer(self):
         #第二层解释        
         

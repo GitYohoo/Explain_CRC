@@ -1,3 +1,4 @@
+#%%
 """
 Functions for explaining classifiers that use tabular data (matrices).
 """
@@ -20,7 +21,7 @@ from lime.discretize import DecileDiscretizer
 from lime.discretize import EntropyDiscretizer
 from lime.discretize import BaseDiscretizer
 from lime.discretize import StatsDiscretizer
-from lime.discretize import DensityDiscretizer
+# from lime.discretize import DensityDiscretizer
 from sklearn.neighbors import KernelDensity
 import numpy as np
 from scipy.signal import argrelextrema
@@ -801,3 +802,5 @@ class RecurrentTabularExplainer(LimeTabularExplainer): #适用于时间序列数
     #         num_samples=num_samples,
     #         distance_metric=distance_metric,
     #         model_regressor=model_regressor)
+
+# %%

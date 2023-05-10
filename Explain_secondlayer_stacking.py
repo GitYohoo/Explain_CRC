@@ -14,11 +14,12 @@ import csv
 
 x_train, x_test, y_train, y_test, feature_names = Read_data.data()
 #%%
-clf = models(x_train, y_train, 2)
-train, test, secondlayer_model = clf.Stacking(x_test, return_first_labels=True)
+secondlayer_model = load(r'D:\Desktop\Explain_CEC_Recording\jobmodels\secondlayer_clf.joblib')
+test = pd.read_csv('data/xtest.csv', header=0)
+train = pd.read_csv('data/xtrain.csv', header=0)
 proba = secondlayer_model.predict_proba(test)
 test_predict = secondlayer_model.predict(test)
-test_acc = accuracy_score(y_test, test_predict) #
+test_acc = accuracy_score(y_test, test_predict) #测试​集准确率
 print("这是第2个分类器")
 print("测试集准确率: {0:.3f}".format(test_acc))
 print(confusion_matrix(y_test,test_predict))
@@ -27,9 +28,11 @@ print(classification_report(y_test,test_predict)) #
 num_features = 10   #取前10个最重要的特征
 class_names=['AWNP','AWP','DWNP','DWP'] #类别名称
 feature_names = ['SVM', 'LR', 'XGB', 'RF'] #特征名称 
+train = np.array(train)
+test = np.array(test)
 #创建一个0~len(train+1)的数组，用于存放离散化的特征
-categorical_features = np.arange(len(train))
-categorical_features2 = [0, 1, 2, 24, 25, 38]
+categorical_features = np.arange(len(train)) #每一个特征都是离散化的
+# categorical_features2 = [0, 1, 2, 24, 25, 38]
 explainer = lime_tabular.LimeTabularExplainer(train, discretize_continuous=True,    #true是选择分位
                                                 discretizer='quartile',
                                                 kernel_width=None, verbose=True, feature_names=feature_names,
@@ -40,10 +43,11 @@ explainer = lime_tabular.LimeTabularExplainer(train, discretize_continuous=True,
                                                 # 可选discretizer='quartile' 'decile' 'entropy', 'KernalDensityEstimation' 
                                                 # 可选feature_selection='highest_weights' 'lasso_path' 'forward_selection'
 #%%
+from Save_exp import save_exp
 print('开始解释....')
-i = 46 
-# if i == 46:
-for i in range(len(train)):
+sample = [46]
+# sample = list(range(len(test)))
+for i in sample:
     # #如果i=7, 22, 24, 35就跳过
     # if i == 7 or i == 22 or i == 24 or i == 35:
     #     continue
@@ -51,7 +55,7 @@ for i in range(len(train)):
     truelabel = y_train[i]
     print("该样本的真实标签为", truelabel)
     output.append("该样本的真实标签为"+str(truelabel))
-    predlabel = clf.Stacking(x_train[i].reshape(1, -1))
+    predlabel = secondlayer_model.predict(train[i].reshape(1, -1))
     predlabel = int(predlabel)
     print("该样本的预测标签为", predlabel)
     output.append("该样本的预测标签为"+str(predlabel))
@@ -61,36 +65,41 @@ for i in range(len(train)):
                                     secondlayer_model.predict_proba,num_features=num_features,
                                     top_labels=4, model_regressor=None, num_samples=20000) #model_regressor:简单模型
 
-    # exp.show_in_notebook(show_table=True, show_all=False)
+    exp.show_in_notebook(show_table=True, show_all=False)
     # exp.as_pyplot_figure(label=int(truelabel))
 
-    for label in range(4): 
-        #对每一个类别都进行解释的保存
-        local_exp_values = exp.local_exp[label]
-        #取出 local_exp_values中的第一列
-        sortted_index = [i[0] for i in local_exp_values]
-        #获取解释的各个特征
-        list_exp_values  = exp.as_list(label=label)
-        #去掉括号和引号
-        for x in range(len(list_exp_values)):
-            list_exp_values_str = str(list_exp_values[x])
-            list_exp_values[x] = list_exp_values_str.replace('(', '').replace(')', '').replace("'", '')
-        #拼接
-        merged_exp_values = list(zip(local_exp_values, list_exp_values))
-        #按照逗号分隔
-        merged_exp_values = [str(i[0][0]) + ',' + str(i[1]) for i in merged_exp_values]
-        #按照逗号分割成三列
-        merged_exp_values = [i.split(',') for i in merged_exp_values]
-        header = ['feature_numbers', 'feature_bins', 'contributions']
-        pd.DataFrame(merged_exp_values).to_csv('save_CRC_explaining\\secondlayer\\label_{}\\train_{}.csv'.format(label+1, i), 
-                                            index=False, header=header)
-        #追加标签信息到csv
-        with open('save_CRC_explaining\\secondlayer\\label_{}\\train_{}.csv'.format(label+1, i), 'a', newline='', encoding='gbk') as csvfile:
-            for true_or_pred_label in output:
-                writer = csv.writer(csvfile)
-                writer.writerow([true_or_pred_label])
-        exp.save_to_file('save_CRC_explaining\\secondlayer\\label_{}\\train_{}.html'.format(label+1, i))
+    for label in range(4):
+        csv_path = 'D:\\Desktop\\CRC_Explaining the Predictions\\save_CRC_explaining\\secondlayer\\label_{}\\train_{}.csv'.format(label+1, i)
+        html_path = 'D:\\Desktop\\CRC_Explaining the Predictions\\save_CRC_explaining\\secondlayer\\html\\train_{}.html'.format(i)
+        save_exp(exp, i, output, label, csv_path, html_path)
 
+#%%
+for label in range(4): 
+    #对每一个类别都进行解释的保存
+    local_exp_values = exp.local_exp[label]
+    #取出 local_exp_values中的第一列
+    sortted_index = [i[0] for i in local_exp_values]
+    #获取解释的各个特征
+    list_exp_values  = exp.as_list(label=label)
+    #去掉括号和引号
+    for x in range(len(list_exp_values)):
+        list_exp_values_str = str(list_exp_values[x])
+        list_exp_values[x] = list_exp_values_str.replace('(', '').replace(')', '').replace("'", '')
+    #拼接
+    merged_exp_values = list(zip(local_exp_values, list_exp_values))
+    #按照逗号分隔
+    merged_exp_values = [str(i[0][0]) + ',' + str(i[1]) for i in merged_exp_values]
+    #按照逗号分割成三列
+    merged_exp_values = [i.split(',') for i in merged_exp_values]
+    header = ['feature_numbers', 'feature_bins', 'contributions']
+    pd.DataFrame(merged_exp_values).to_csv('save_CRC_explaining\\secondlayer\\label_{}\\train_{}.csv'.format(label+1, i), 
+                                        index=False, header=header)
+    #追加标签信息到csv
+    with open('save_CRC_explaining\\secondlayer\\label_{}\\train_{}.csv'.format(label+1, i), 'a', newline='', encoding='gbk') as csvfile:
+        for true_or_pred_label in output:
+            writer = csv.writer(csvfile)
+            writer.writerow([true_or_pred_label])
+    exp.save_to_file('save_CRC_explaining\\secondlayer\\label_{}\\train_{}.html'.format(label+1, i))
 #%%
 import os
 import pandas as pd
