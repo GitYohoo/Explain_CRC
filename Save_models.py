@@ -16,27 +16,14 @@ for j, model in enumerate(firstlayer_models):
     dump(model, f'jobmodels\\the{j}th_firstlayer_clf.joblib')
 dump(secondlayer_model, 'jobmodels\\secondlayer_clf.joblib')
 # %%
-class Stacking_model():
-    """
-        将整个stacking模型封装起来
-    """
-    def __init__(self, firstlayer_models, secondlayer_model):
-        self.firstlayer_models = firstlayer_models
-        self.secondlayer_model = secondlayer_model
-
-    def predict(self, xtest):
-        labels = []
-        for model in self.firstlayer_models:
-            labels.append(model.predict(xtest))
-        labels = np.array(labels).T
-        return self.secondlayer_model.predict(labels)
+from Stacking_model import Stacking_model
 
 wm = Stacking_model(firstlayer_models, secondlayer_model)
 # mm.predict(xtest=x_test[1].reshape(1, -1))
 dump(wm, f'jobmodels\\whole_stacking_clf.joblib')
 #%%
-# stackingmodel = load(f'jobmodels\\whole_stacking_clf.joblib')
-# stackingmodel.predict(xtest=x_test[1].reshape(1, -1))
+stackingmodel = load(f'jobmodels\\whole_stacking_clf.joblib')
+stackingmodel.predict(xtest=x_test[1].reshape(1, -1))
 # %%
 #将xtrain和xtest保存到csv文件中
 xtrain = pd.DataFrame(xtrain)
