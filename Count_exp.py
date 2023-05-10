@@ -62,6 +62,9 @@ def count_exp(org_path, count_path):
 
 def sum_all(sum_path):
     # 获取SVM下所有label的csv文件路径
+    #删除path——labels下的labels.csv
+    if os.path.exists(sum_path + 'labels.csv'):
+        os.remove(sum_path + 'labels.csv')
     csv_files = []
     csv_files = [os.path.join(sum_path, f) for f in os.listdir(sum_path) if os.path.isfile(os.path.join(sum_path, f)) and f.endswith('.csv')]
     #将0和1调换位置，2和3调换位置，4和5调换位置，4和5调换位置，6和7调换位置
@@ -77,3 +80,19 @@ def sum_all(sum_path):
     # 将拼接后的DataFrame保存为labels.csv
     headers = ['AWNP','+','AWNP','-','AWP','+','AWP','-','DWNP','+','DWNP','-','DWNP','+','DWNP','-',]
     labels_df.to_csv(sum_path + 'labels.csv', index=False, header=headers)
+
+def quotation_marks(sum_path):
+    #检查D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\firstlayer\XGB\labels.csv这个文件的每一个单元格，在所有单元格前面加一个单引号
+    with open(sum_path + 'labels.csv', 'r', encoding='gbk') as csvfile:
+        reader = csv.reader(csvfile)
+        rows = [row for row in reader]
+
+    # Modify the rows and write them to a new CSV file
+    modified_rows = []
+    for row in rows:
+        modified_row = ["'" + cell for cell in row]
+        modified_rows.append(modified_row)
+
+    with open(sum_path + 'labels_new.csv', 'w', newline='', encoding='gbk') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerows(modified_rows)
