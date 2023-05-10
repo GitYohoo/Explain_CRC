@@ -74,79 +74,21 @@ for i in sample:
         save_exp(exp, i, output, label, csv_path, html_path)
 
 #%%
-for label in range(4): 
-    #对每一个类别都进行解释的保存
-    local_exp_values = exp.local_exp[label]
-    #取出 local_exp_values中的第一列
-    sortted_index = [i[0] for i in local_exp_values]
-    #获取解释的各个特征
-    list_exp_values  = exp.as_list(label=label)
-    #去掉括号和引号
-    for x in range(len(list_exp_values)):
-        list_exp_values_str = str(list_exp_values[x])
-        list_exp_values[x] = list_exp_values_str.replace('(', '').replace(')', '').replace("'", '')
-    #拼接
-    merged_exp_values = list(zip(local_exp_values, list_exp_values))
-    #按照逗号分隔
-    merged_exp_values = [str(i[0][0]) + ',' + str(i[1]) for i in merged_exp_values]
-    #按照逗号分割成三列
-    merged_exp_values = [i.split(',') for i in merged_exp_values]
-    header = ['feature_numbers', 'feature_bins', 'contributions']
-    pd.DataFrame(merged_exp_values).to_csv('save_CRC_explaining\\secondlayer\\label_{}\\train_{}.csv'.format(label+1, i), 
-                                        index=False, header=header)
-    #追加标签信息到csv
-    with open('save_CRC_explaining\\secondlayer\\label_{}\\train_{}.csv'.format(label+1, i), 'a', newline='', encoding='gbk') as csvfile:
-        for true_or_pred_label in output:
-            writer = csv.writer(csvfile)
-            writer.writerow([true_or_pred_label])
-    exp.save_to_file('save_CRC_explaining\\secondlayer\\label_{}\\train_{}.html'.format(label+1, i))
+from Count_exp import count_exp
+org_path = r'D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\secondlayer\label_{}\\'
+count_path = r'D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\secondlayer\\'
+count_exp(org_path, count_path)
 #%%
-import os
-import pandas as pd
-import csv
-path = r'D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\secondlayer\label_{}\\'
-def get_char_count(path):
-    #统计排序
-    files = os.listdir(path)
-    char_count_positive = {}
-    char_count_negative = {}
+from Count_exp import sum_all
+sum_path = r'D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\secondlayer\\'
+sum_all(sum_path)
 
-    for file in files:
-        if file.endswith('.csv'):
-            df = pd.read_csv(os.path.join(path, file), encoding='gbk')
-            for i in range(0, 4):
-                col = df.iloc[i, 1]
-                contribution = df.iloc[i, 2]
-                if contribution > 0:
-                    if col in char_count_positive:
-                        char_count_positive[col] += 1
-                    else:
-                        char_count_positive[col] = 1
-                if contribution < 0:
-                    if col in char_count_negative:
-                        char_count_negative[col] += 1
-                    else:
-                        char_count_negative[col] = 1
-    return  char_count_positive.items()
 
-def write_csv(char_count_sorted, label):
-    #把最终结果写到csv
-    #按照逗号分隔
-    values = [str(i[0]) + ',' + str(i[1]) for i in char_count_sorted]
-    #按照逗号分割成三列
-    char_count_sorted = [i.split(',') for i in values]
-    with open('D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\secondlayer\label_{}_p.csv'.format(label), 'w', newline='', encoding='gbk') as csvfile:
-        for char in char_count_sorted:
-            writer = csv.writer(csvfile)
-            writer.writerow(char)
-#排序
-char_count_sorted_1 = sorted(get_char_count(path.format(1)), key=lambda x: x[1], reverse=True)
-char_count_sorted_2 = sorted(get_char_count(path.format(2)), key=lambda x: x[1], reverse=True)
-char_count_sorted_3 = sorted(get_char_count(path.format(3)), key=lambda x: x[1], reverse=True)
-char_count_sorted_4 = sorted(get_char_count(path.format(4)), key=lambda x: x[1], reverse=True)
-#写入csv
-for i in range(4):
-    write_csv(eval('char_count_sorted_{}'.format(i+1)), i+1)
+
+
+
+
+
 
 
 #%%决策树决策过程
@@ -174,8 +116,7 @@ graph.render('DT', view=False)
 print('样本{}的决策路径：{}'.format(i, node_list))
 print('样本{}的分类结果：{}'.format(i, path))
 
-
-#%%
+#%% shap解释
 import libraries.shap
 from libraries.shap import links
 libraries.shap.initjs()
@@ -188,27 +129,8 @@ shap_values = explainer2(test)
 # shap.plots.force(shap_values)
 libraries.shap.plots.waterfall(shap_values[i])
 
-#%%
-import os
-import pandas as pd
 
-# 获取SVM下所有label的csv文件路径
-path = r'D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\secondlayer\\'
-csv_files = []
-csv_files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and f.endswith('.csv')]
-#将0和1调换位置，2和3调换位置，4和5调换位置，4和5调换位置，6和7调换位置
-for i in range(len(csv_files)):
-    if i % 2 == 0:#
-        csv_files[i], csv_files[i+1] = csv_files[i+1], csv_files[i]
-# 读取所有csv文件并拼接
-labels_df = pd.DataFrame()
-for csv_file in csv_files:
-    #横向拼接
-    labels_df = pd.concat([labels_df, pd.read_csv(csv_file, encoding='gbk')], axis=1)
 
-# 将拼接后的DataFrame保存为labels.csv
-headers = ['AWNP+','AWNP-','AWP+','AWP-','DWNP+','DWNP-','DWNP+','DWNP-']
-labels_df.to_csv(r'D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\secondlayer\labels.csv', index=False)
 # %% optiLIME
 from libraries.lime_stability.stability import LimeTabularExplainerOvr
 num_features = 10   #取前10个最重要的特征
