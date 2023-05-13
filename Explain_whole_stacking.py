@@ -25,10 +25,6 @@ print("这是第2个分类器")
 print("测试集准确率: {0:.3f}".format(test_acc))
 print(confusion_matrix(y_test,test_predict))
 print(classification_report(y_test,test_predict)) 
-
-#%% 
-
-
 #%%进行可解释性研究
 #创建解释器
 num_features = 10   #取前10个最重要的特征
@@ -113,11 +109,11 @@ idx = 7
 # for idx in range(10):
 np.random.seed(1)
 exp = explainer.explain_instance(x_test[idx], 
-                                clf.Stacking, 
+                                wsm.predict, 
                                 threshold=0.95) #thershold临界点
 
-print('Prediction: ', explainer.class_names[int(clf.Stacking(x_test[idx].reshape(1, -1))[0])])
+print('Prediction: ', explainer.class_names[int(wsm.predict(x_test[idx].reshape(1, -1))[0])])
 print("该样本的真实标签为", class_names[int(y_test[idx])])
 exp.show_in_notebook()
 # %%
-print('Prediction: ', explainer.class_names[int(clf.Stacking(x_test[idx].reshape(1, -1))[0])])
+print('Prediction: ', explainer.class_names[int(wsm.predict(x_test[idx].reshape(1, -1))[0])])
