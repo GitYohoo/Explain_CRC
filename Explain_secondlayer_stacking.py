@@ -82,14 +82,6 @@ count_exp(org_path, count_path)
 from Count_exp import sum_all
 sum_path = r'D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\secondlayer\\'
 sum_all(sum_path)
-
-
-
-
-
-
-
-
 #%%决策树决策过程
 from sklearn.tree import export_graphviz
 from graphviz import Source
@@ -127,8 +119,6 @@ shap_values = explainer2(test)
 #     shap.plots.waterfall(shap_values[i])
 # shap.plots.force(shap_values)
 libraries.shap.plots.waterfall(shap_values[i])
-
-
 
 # %% optiLIME
 from libraries.lime_stability.stability import LimeTabularExplainerOvr
