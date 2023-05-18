@@ -8,14 +8,23 @@ from read_data import Read_data
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import numpy as np
-
+from sklearn.preprocessing import MinMaxScaler
 
 # # 加载数据的同时去掉第一行，第一行是特征名称
-data = pd.read_csv('D:\\Desktop\\298features.csv', header=0)
+data = pd.read_csv('D:\\Desktop\\new_data.csv', header=0)
 #取出第一列作为标签
-targets = data.iloc[:,0]
+targets = data.iloc[:,-1]
 #取出后面的298列作为特征
-data = data.iloc[:,1:]
+data = data.iloc[:,2:]
+
+
+# 创建MinMaxScaler对象
+scaler = MinMaxScaler()
+# 对data进行归一化
+normalized_data = scaler.fit_transform(data)
+# 将归一化后的数据重新转换为DataFrame
+data = pd.DataFrame(normalized_data, columns=data.columns)
+
 
 # 划分训练集和测试集
 train_data, x_test, train_targets, y_test = train_test_split(data, targets, test_size=0.2)
@@ -40,17 +49,27 @@ class Transformer(nn.Module):
         self.fc = nn.Linear(input_dim, output_dim) 
 
     def forward(self, x):
-        # Add time dimension
-        # x = x.unsqueeze(0) 
         # Pass through transformer encoder
         x = self.transformer_encoder(x)
-        # Take mean over time dimension
-        # x = x.mean(dim=1)
         # Pass through dropout layer
         x = self.dropout(x) 
         # Pass through linear layer 
         x = self.fc(x)
-        return x
+        # Calculate attention weights
+        attention_weights = self.calculate_attention_weights(x)
+
+        return x, attention_weights
+    
+    def calculate_attention_weights(self, x):
+        # Retrieve the attention weights from the self-attention layers
+        attention_weights = []
+
+        for layer in self.transformer_encoder.layers:
+            attn_weights = layer.self_attn.in_proj_weight.data.detach()
+            attention_weights.append(attn_weights)
+            
+        return attention_weights
+
 
 class CustomDataset(Dataset):
     def __init__(self, data, targets):
@@ -68,8 +87,8 @@ class CustomDataset(Dataset):
         return x, y.flatten().long()
 #%%
 # 初始化Transformer模型，优化器和损失函数
-model = Transformer(input_dim=train_data.shape[1], output_dim=4, hidden_dim=128, num_layers=2, num_heads=2, dropout=0.1)
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+model = Transformer(input_dim=train_data.shape[1], output_dim=4, hidden_dim=128, num_layers=2, num_heads=5, dropout=0.3)
+optimizer = optim.Adam(model.parameters(), lr=0.0001)
 criterion = nn.CrossEntropyLoss(reduction='none')
 
 # 创建自定义数据集和数据加载器对象
@@ -80,7 +99,7 @@ train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 train_losses = []
 train_accs = []
 
-for epoch in range(200):
+for epoch in range(100):
     running_loss = 0.0
     correct = 0
     total = 0
@@ -98,7 +117,7 @@ for epoch in range(200):
         target = target.squeeze() 
         
         # Calculate output and loss
-        output = model(data)
+        output, attention_weights = model(data)
         loss = criterion(output, target) 
 
         # Explicitly create gradients for loss
@@ -111,6 +130,12 @@ for epoch in range(200):
         _, predicted = torch.max(output.data, 1)  
         total += target.size(0)  
         correct += (predicted == target).sum().item()
+
+        #     # Print attention weights
+        # if epoch % 10 == 0:
+        #     print(f"Epoch {epoch+1} attention weights:")
+        #     for layer_weights in attention_weights:
+        #         print(layer_weights)
         
     epoch_loss = running_loss / len(train_loader)
     epoch_acc = correct / total
@@ -131,10 +156,11 @@ plt.show()
 model.eval()  # set the model in evaluation mode to disable dropout
 # x_test = x_test.unsqueeze(0)  # add a batch dimension to the test data
 with torch.no_grad():
-    output = model(x_test)
+    output, attention_weights = model(x_test)
     pred = output.argmax(dim=1)  # get the predicted class for each sample
     accuracy = (pred == y_test).sum().item() / len(y_test)  # calculate the accuracy of the model on the test set
     print(f"Accuracy: {accuracy}")
+
 
 # %%
  # 绘制混淆矩阵
@@ -152,4 +178,11 @@ plt.xlabel('Predicted labels')
 plt.ylabel('True labels')
 plt.show()
 
+# #%%
+# num_heads = 5
+# # Plot attention weights
+# fig, axs = plt.subplots(num_heads, 1, figsize=(10, num_heads*5))
+# for head_idx, head_weights in enumerate(attention_weights):
+#     sns.heatmap(head_weights.T, ax=axs[head_idx], vmin=0., vmax=1., cmap='Reds')
+# plt.show() 
 # %%
