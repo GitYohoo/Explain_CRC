@@ -3,6 +3,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision.ops import focal_loss
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
@@ -56,10 +57,10 @@ class Transformer(nn.Module):
         x = self.transformer_encoder(x)# 传入Transformer编码器
         x = self.dropout(x) # 传入Dropout层      
         x = self.fc(x)# 传入全连接层  
-        attention_weights = self.calculate_attention_weights(x)# 计算注意力权重
+        attention_weights = self.calculate_attention_weights()# 计算注意力权重
         return x, attention_weights
 
-    def calculate_attention_weights(self, x):
+    def calculate_attention_weights(self):
         # 从自注意力层检索注意力权重
         attention_weights = []
         for layer in self.transformer_encoder.layers:
@@ -75,6 +76,16 @@ class Transformer(nn.Module):
         x = x.detach().numpy()# 将张量转换为numpy数组
         return x
 
+    def plot_attention_weights(self):
+        count = 0 #层数
+        fig, axes = plt.subplots(ncols=len(attention_weights), figsize=(20,10))
+        for ax, attn_weights in zip(axes, attention_weights):
+            im = ax.imshow(attn_weights)
+            ax.set_title('Attention Weights Layer {}'.format(count))
+            fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+            count += 1
+    plt.show()
+
 # 定义自定义数据集类
 class CustomDataset(Dataset):
     def __init__(self, data, targets):
@@ -89,12 +100,33 @@ class CustomDataset(Dataset):
         # 将目标值转换为1维张量的类索引形式
         return x, y.flatten().long()
     
-epochs=200
+# 定义Focal Loss损失函数
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=1, gamma=2, reduction='mean'):
+        super(FocalLoss, self).__init__()
+        self.alpha = alpha 
+        self.gamma = gamma
+        self.reduction = reduction
+
+    def forward(self, inputs, targets):
+        ce_loss = F.cross_entropy(inputs, targets, reduction='none')
+        pt = torch.exp(-ce_loss)
+        focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
+
+        if self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        else:
+            return focal_loss
+
+epochs=100
 # 初始化模型,优化器和损失函数 
-model = Transformer(input_dim=train_data.shape[1], output_dim=4, hidden_dim=256, num_layers=3, num_heads=10, dropout=0.5)
+model = Transformer(input_dim=train_data.shape[1], output_dim=4, hidden_dim=256, num_layers=3, 
+                                                    num_heads=10, dropout=0.5)
 optimizer = optim.Adam(model.parameters(), lr=0.0001)
 criterion = nn.CrossEntropyLoss(reduction='none') # 交叉熵损失函数
-# criterion = BCEWithLogitsLoss(reduction='none') 
+# criterion = FocalLoss(gamma=2, alpha=0.25)
 train_dataset = CustomDataset(train_data, train_targets)
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)  # 创建数据集和数据加载器
 lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer,
@@ -105,7 +137,7 @@ lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer,
 
 train_losses = []
 train_accs = []
-
+attention_weights = [] 
 for epoch in range(epochs):
     running_loss = 0.0
     correct = 0
@@ -123,6 +155,7 @@ for epoch in range(epochs):
         _, predicted = torch.max(output.data, 1)
         total += target.size(0)
         correct += (predicted == target).sum().item()  
+        attention_weights.append(attention_weights)
 
     epoch_loss = running_loss / len(train_loader)
     epoch_acc = correct / total
@@ -146,16 +179,16 @@ with torch.no_grad():
     pred = output.argmax(dim=1)  # 获取每个样本的预测类
     accuracy = (pred == y_test).sum().item() / len(y_test)  # 计算模型在测试集上的准确率
     print(f"Accuracy: {accuracy}")
-
-# 绘制混淆矩阵  
+model.plot_attention_weights()
+# # 绘制混淆矩阵  
 y_pred = pred.numpy()
 y_true = y_test.numpy()  
-cm = confusion_matrix(y_true, y_pred)
-sns.heatmap(cm, annot=True, cmap='Blues')
-plt.xlabel('Predicted labels')
-plt.ylabel('True labels')
-plt.show()
-print(classification_report(y_true, y_pred, target_names=['AWNP', 'AWP', 'DWNP', 'DWP']))
+# cm = confusion_matrix(y_true, y_pred)
+# sns.heatmap(cm, annot=True, cmap='Blues')
+# plt.xlabel('Predicted labels')
+# plt.ylabel('True labels')
+# plt.show()
+# print(classification_report(y_true, y_pred, target_names=['AWNP', 'AWP', 'DWNP', 'DWP']))
 # %%
 from libraries.lime import lime_tabular 
 
@@ -179,10 +212,8 @@ explainer = lime_tabular.LimeTabularExplainer(x_train, discretize_continuous=Tru
 
 # 将样本tensor转换为numpy数组,传入LIME
 x_test_np = x_test.numpy()  
-exp = explainer.explain_instance(x_test_np[3], model.predict_proba, num_features=num_features, top_labels=1,
+exp = explainer.explain_instance(x_test_np[8], model.predict_proba, num_features=num_features, top_labels=1,
                                  num_samples=10000, distance_metric='euclidean', model_regressor=None)
 exp.show_in_notebook(show_table=True, show_all=False)  # 在notebook中显示解释结果
-
-# %%
-# model.predict_proba(x_test_np)
+1#%%
 # %%

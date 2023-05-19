@@ -14,12 +14,12 @@ class Read_data(object):
         selected_feature_name_diff_path=r'data\importance_paixu_50.csv', 
         test_size=0.1, random_state=42):
         # 读入原始数据
-        df = pd.read_csv(csv_path, header=None, index_col=0)
+        df = pd.read_csv(csv_path, header=None, index_col=0, low_memory=False)
         data = df.T
         data = data.dropna(axis=1, how='any')
         data = data.drop(['P_ID'], axis=1)
         data['label'] = pd.to_numeric(data['label'], errors='coerce')
-        data = pd.DataFrame(data, dtype=np.float)
+        data = pd.DataFrame(data, dtype=np.float32)
 
         feature = data.drop(['label'], axis=1)
         label = data['label'].values
