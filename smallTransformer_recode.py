@@ -209,7 +209,6 @@ explainer = lime_tabular.LimeTabularExplainer(x_train, discretize_continuous=Tru
                                                 # 可选discretizer='quartile' 'decile' 'entropy', 'KernalDensityEstimation' 
                                                 # 可选feature_selection='highest_weights' 'lasso_path' 'forward_selection'
 # %%
-
 # 将样本tensor转换为numpy数组,传入LIME
 x_test_np = x_test.numpy()  
 exp = explainer.explain_instance(x_test_np[8], model.predict_proba, num_features=num_features, top_labels=1,
