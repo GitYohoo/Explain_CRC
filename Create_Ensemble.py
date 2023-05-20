@@ -49,4 +49,5 @@ class Create_ensemble(object):  # 集成器
         
         if return_firstlayer_models:
             return firstlayer_models
-        return train_pred, test_pred_stack, clf#返回训练集预测标签，测试集预测标签, 模型
+        else:
+            return train_pred, test_pred_stack, clf#返回训练集预测标签，测试集预测标签, 模型
