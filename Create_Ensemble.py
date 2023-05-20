@@ -45,7 +45,8 @@ class Create_ensemble(object):  # 集成器
             # pred = np.array(clf.predict(T))
             # result = np.concatenate((test_pred_stack[:, i].reshape(-1, 1), pred.reshape(-1, 1)), axis=1)
             # print("直接预测结果：", result)
-
+            
+        
         if return_firstlayer_models:
             return firstlayer_models
         return train_pred, test_pred_stack, clf#返回训练集预测标签，测试集预测标签, 模型
