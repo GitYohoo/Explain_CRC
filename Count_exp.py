@@ -17,12 +17,12 @@ def count_exp(org_path, count_path):
                 for i in range(0, 4):
                     col = df.iloc[i, 1]
                     contribution = df.iloc[i, 2]
-                    if contribution > 0:
+                    if int(contribution) > 0:
                         if col in char_count_positive:
                             char_count_positive[col] += 1
                         else:
                             char_count_positive[col] = 1
-                    if contribution < 0:
+                    if int(contribution) < 0:
                         if col in char_count_negative:
                             char_count_negative[col] += 1
                         else:
