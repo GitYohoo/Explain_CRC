@@ -12,7 +12,8 @@ from sklearn.tree import export_graphviz
 from graphviz import Source
 import csv
 
-x_train, x_test, y_train, y_test, feature_names = Read_data.data()
+data = Read_data()
+x_train, x_test, y_train, y_test, feature_names = data.data()
 #%%
 secondlayer_model = load(r'D:\Desktop\Explain_CEC_Recording\jobmodels\secondlayer_clf.joblib')
 test = pd.read_csv('data/xtest.csv', header=0)
@@ -72,7 +73,7 @@ for i in sample:
         csv_path = 'D:\\Desktop\\CRC_Explaining the Predictions\\save_CRC_explaining\\secondlayer\\label_{}\\train_{}.csv'.format(label+1, i)
         html_path = 'D:\\Desktop\\CRC_Explaining the Predictions\\save_CRC_explaining\\secondlayer\\html\\train_{}.html'.format(i)
         save_exp(exp, i, output, label, csv_path, html_path)
-
+i=sample[0]
 #%%
 from Count_exp import count_exp
 org_path = r'D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\secondlayer\label_{}\\'

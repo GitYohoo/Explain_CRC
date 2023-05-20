@@ -12,7 +12,8 @@ from models import models
 from read_data import Read_data
 import csv
 
-x_train, x_test, y_train, y_test, feature_names1 = Read_data.data()
+data = Read_data()
+x_train, x_test, y_train, y_test, feature_names1 = data.data()
 
 #%%第二层解释
 secondlayer_model = load(r'D:\Desktop\Explain_CEC_Recording\jobmodels\secondlayer_clf.joblib')
@@ -99,7 +100,7 @@ for i in sample:
                                                     # 可选feature_selection='highest_weights' 'lasso_path' 'forward_selection'
     fitted_firstlayer_models = []
     for i in range(4):
-        fitted_firstlayer_models.append(load('D:\Desktop\Explain_CEC_Recording\jobmodels\the{}th_firstlayer_clf.joblib'.format(i)))
+        fitted_firstlayer_models.append(load('D:\\Desktop\\Explain_CEC_Recording\\jobmodels\the{}th_firstlayer_clf.joblib'.format(i)))
     for firstlayer_model in the_firstlayer_model_to_explian:
         if firstlayer_model == 'SVM':
             firstlayer_model = fitted_firstlayer_models[0]
@@ -113,6 +114,8 @@ for i in sample:
         if firstlayer_model == 'RF':
             firstlayer_model = fitted_firstlayer_models[3] 
             path = r"D:\Desktop\CRC_Explaining the Predictions\save_CRC_explaining\firstlayer\RF\\"
+        else:
+            path = ""
         
         print("正在解释的是", firstlayer_model)
         #十折交叉验证

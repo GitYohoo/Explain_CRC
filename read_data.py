@@ -9,7 +9,7 @@ class Read_data(object):
     def __init__(self) -> None:
         pass       
 
-    def data(csv_path=r'data\com_patient_sample_mrna.csv',
+    def data(self, csv_path=r'data\com_patient_sample_mrna.csv',
         selected_feature_name_same_path=r'data\50_selected_feature_name_same.csv',
         selected_feature_name_diff_path=r'data\importance_paixu_50.csv', 
         test_size=0.1, random_state=42):
@@ -39,7 +39,7 @@ class Read_data(object):
         for s in range(len(same_selected_feature_name)):
             same_diff_feature_name[0, s] = same_selected_feature_name[s]
         for d in range(len(diff_selected_feature_name)):
-            s = s + 1
+            s = s + 1 # type: ignore
             if d < pt:
                 same_diff_feature_name[0, s] = diff_selected_feature_name[d]
         same_diff_selected = same_diff_feature_name[0]
@@ -54,7 +54,8 @@ class Read_data(object):
         return x_train, x_test, y_train, y_test, feature_names
 # %%
 if __name__ == '__main__':
-    x_train, x_test, y_train, y_test, feature_names = Read_data.data(
+    read_data = Read_data()
+    x_train, x_test, y_train, y_test, feature_names = read_data.data(
         csv_path=r'E:\结直肠癌研究\abc\com_patient_sample_mrna.csv',
         selected_feature_name_same_path=r'E:\结直肠癌研究\50_selected_feature_name_same.csv',
         selected_feature_name_diff_path=r'E:\结直肠癌研究\selected_feature_num_50\排序后重要度特征排序\importance_paixu_50.csv'

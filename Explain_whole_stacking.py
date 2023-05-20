@@ -11,7 +11,8 @@ import os
 
 from read_data import Read_data
 
-x_train, x_test, y_train, y_test, feature_names = Read_data.data()
+data = Read_data()
+x_train, x_test, y_train, y_test, feature_names = data.data()
 
 #%%
 secondlayer_model = load(f'D:\Desktop\Explain_CEC_Recording\jobmodels\secondlayer_clf.joblib')

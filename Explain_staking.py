@@ -25,7 +25,7 @@ class Explain_stacking(object):
     def __init__(self): 
         pass 
     
-    def explain_secondlayer(self):
+    def explain_secondlayer(self, self):
         #第二层解释        
         
         test_predict = secondlayer_model.predict(test)
@@ -54,7 +54,7 @@ class Explain_stacking(object):
         exp_picture = self.exp.show_in_notebook(show_table=True, show_all=False)
 
 
-    def explain_firstlayer(self):
+    def explain_firstlayer(self, self):
         #第一层解释
         print('开始第一层解释....')
         local_exp_values = self.exp.local_exp[truelabel]

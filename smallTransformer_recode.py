@@ -57,17 +57,17 @@ class Transformer(nn.Module):
         x = self.transformer_encoder(x)# 传入Transformer编码器
         x = self.dropout(x) # 传入Dropout层      
         x = self.fc(x)# 传入全连接层  
-        attention_weights = self.calculate_attention_weights()# 计算注意力权重
+        attention_weights = self.calculate_attention_weights() # 计算注意力权重
         return x, attention_weights
 
     def calculate_attention_weights(self):
         # 从自注意力层检索注意力权重
         attention_weights = []
         for layer in self.transformer_encoder.layers:
-            attn_weights = layer.self_attn.in_proj_weight.data.detach()
+            attn_weights = layer.self_attn.in_proj_weight.data.detach()  # type: ignore
             attention_weights.append(attn_weights)
         return attention_weights
-
+    
     def predict_proba(self, x):        
         if isinstance(x, np.ndarray):
             x = torch.tensor(x, dtype=torch.float32)#如果x是numpy数组,则转换为tensor
@@ -79,7 +79,7 @@ class Transformer(nn.Module):
     def plot_attention_weights(self):
         count = 0 #层数
         fig, axes = plt.subplots(ncols=len(attention_weights), figsize=(20,10))
-        for ax, attn_weights in zip(axes, attention_weights):
+        for ax, attn_weights in zip(axes, attention_weights): # type: ignore
             im = ax.imshow(attn_weights)
             ax.set_title('Attention Weights Layer {}'.format(count))
             fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
@@ -192,27 +192,39 @@ y_true = y_test.numpy()
 # %%
 from libraries.lime import lime_tabular 
 
-#创建解释器
-num_features = 10   #取前10个最重要的特征
-class_names=['AWNP','AWP','DWNP','DWP'] #类别名称
-#取data的第一行作为特征名称
+# Create explainer
+num_features = 10
+class_names = ['AWNP', 'AWP', 'DWNP', 'DWP']
 feature_names = data.columns.values.tolist()
 categorical_features = [231, 265, 266, 267, 280]
 x_train = train_data.numpy()
-explainer = lime_tabular.LimeTabularExplainer(x_train, discretize_continuous=True,    #true是选择分位
-                                                discretizer='quartile',
-                                                kernel_width=None, verbose=True, feature_names=feature_names,
-                                                mode='classification', class_names=class_names,
-                                                training_labels=y_true,
-                                                feature_selection='lasso_path',
-                                                categorical_features=categorical_features)  
-                                                # 可选discretizer='quartile' 'decile' 'entropy', 'KernalDensityEstimation' 
-                                                # 可选feature_selection='highest_weights' 'lasso_path' 'forward_selection'
-# %%
-# 将样本tensor转换为numpy数组,传入LIME
-x_test_np = x_test.numpy()  
-exp = explainer.explain_instance(x_test_np[8], model.predict_proba, num_features=num_features, top_labels=1,
-                                 num_samples=10000, distance_metric='euclidean', model_regressor=None)
-exp.show_in_notebook(show_table=True, show_all=False)  # 在notebook中显示解释结果
-1#%%
+
+explainer = lime_tabular.LimeTabularExplainer(
+    x_train,
+    discretize_continuous=True,
+    discretizer='quartile',
+    kernel_width=None,
+    verbose=True,
+    feature_names=feature_names,
+    mode='classification',
+    class_names=class_names,
+    training_labels=y_true,
+    feature_selection='lasso_path',
+    categorical_features=categorical_features
+)
+
+# Explain instance
+x_test_np = x_test.numpy()
+exp = explainer.explain_instance(
+    x_test_np[8],
+    model.predict_proba,
+    num_features=num_features,
+    top_labels=1,
+    num_samples=10000,
+    distance_metric='euclidean',
+    model_regressor=None
+)
+
+# Show explanation
+exp.show_in_notebook(show_table=True, show_all=False)
 # %%
