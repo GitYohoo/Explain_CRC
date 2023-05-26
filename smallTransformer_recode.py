@@ -85,10 +85,12 @@ class Transformer(nn.Module):
         attn_weights = []
 
         for layer in self.transformer_encoder.layers:
+            weight = layer.self_attn.in_proj_weight
+            dim = layer.self_attn.embed_dim
             # 获取q,k,v的权重
-            q_weight = layer.self_attn.in_proj_weight[: layer.self_attn.embed_dim, :]
-            k_weight = layer.self_attn.in_proj_weight[layer.self_attn.embed_dim : 2 * layer.self_attn.embed_dim, :]
-            v_weight = layer.self_attn.in_proj_weight[2 * layer.self_attn.embed_dim : 3 * layer.self_attn.embed_dim, :]
+            q_weight = weight[:dim, :]
+            k_weight = weight[dim:2*dim, :] 
+            v_weight = weight[2*dim:, :]  
             # 置need_weights=True以返回注意力得分
             _, attn_output_weights = layer.self_attn(
                 q_weight, k_weight, v_weight, need_weights=True
@@ -217,10 +219,10 @@ plt.plot(train_accs, label="Training Accuracy")
 plt.xlabel("Epoch")
 plt.legend()
 plt.show()
-
+#%%
 model.eval()  # 设置模型为评估模式以禁用dropout
 with torch.no_grad():
-    output, attention_weights = model(x_test)
+    output, _ = model(x_test)
     pred = output.argmax(dim=1)  # 获取每个样本的预测类
     accuracy = (pred == y_test).sum().item() / len(y_test)  # 计算模型在测试集上的准确率
     print(f"Accuracy: {accuracy}")
@@ -236,7 +238,6 @@ with torch.no_grad():
     print(f"pred: {pred}")
     print(f"y_test[sample]: {y_test[sample]}")
 model.plot_attention_weights([w.cpu().numpy() for w in attention_weights])
-
 
 #%%
 # # 绘制混淆矩阵
@@ -288,7 +289,6 @@ exp = explainer.explain_instance(
 # Show explanation
 exp.show_in_notebook(show_table=True, show_all=False)
 # %%
-#
 feature_names = data.columns.values.tolist()
 
 avg_attn = []
@@ -304,3 +304,5 @@ for layer_avg_attn in avg_attn:
     # 打印索引对应的特征名
     print([feature_names[i] for i in topk.indices])
 plt.show()
+
+# %%
