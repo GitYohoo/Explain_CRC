@@ -3,6 +3,10 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import warnings
+import torch
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+import torch.nn.functional as F
 warnings.filterwarnings('ignore')
 
 class Read_data(object):
@@ -52,14 +56,60 @@ class Read_data(object):
         x_test = np.array(x_test)
 
         return x_train, x_test, y_train, y_test, feature_names
-# %%
-if __name__ == '__main__':
-    read_data = Read_data()
-    x_train, x_test, y_train, y_test, feature_names = read_data.data(
-        csv_path=r'E:\结直肠癌研究\abc\com_patient_sample_mrna.csv',
-        selected_feature_name_same_path=r'E:\结直肠癌研究\50_selected_feature_name_same.csv',
-        selected_feature_name_diff_path=r'E:\结直肠癌研究\selected_feature_num_50\排序后重要度特征排序\importance_paixu_50.csv'
-    )
+    
+    def Transformer_data(self):
+        device = torch.device("cpu")
 
+        # 加载数据的同时去掉第一行,第一行是特征名称
+        feature_name_data = pd.read_csv("data\\score_selected_feature_name.csv", header=0)
+        # 取出第一行
+        feature_name = feature_name_data.iloc[0, :]
+        rowdata = pd.read_csv("data\\com_patient_sample_mrna.csv", header=None, index_col=0, low_memory=False)
+
+        #把row index列中与feature_name中相同的行取出来
+        data = rowdata.loc[feature_name, :]
+        #data转置
+        data = data.T
+        data  = data.astype(float)
+        #取出rowdata的label行作为标签
+        targets = rowdata.loc["label", :]
+        #转化为int
+        targets = targets.astype(int)
+
+        scaler = MinMaxScaler() # # 创建MinMaxScaler对象
+        normalized_data = scaler.fit_transform(data)# # 对data进行归一化
+        data = pd.DataFrame(normalized_data, columns=data.columns)# # 将归一化后的数据重新转换为DataFrame
+
+        #为了提高多头注意力机制头的个数，补充3列0到data的后面
+        # 创建一个包含3列零值的数组
+        zero_cols = pd.DataFrame(0, index=data.index, columns=['Zero1', 'Zero2', 'Zero3'])
+        data = pd.concat([data, zero_cols], axis=1)
+
+        # 划分训练集和测试集,训练集占80%,测试集占20%
+        train_data, x_test, train_targets, y_test = train_test_split(
+            data, targets, test_size=0.2
+        )
+
+        # 标签值减1
+        train_targets = train_targets - 1
+        y_test = y_test - 1
+        # 转化为tensor格式
+        train_data = torch.tensor(train_data.values, dtype=torch.float32)
+        x_test = torch.tensor(x_test.values, dtype=torch.float32)
+        train_targets = torch.tensor(train_targets.values, dtype=torch.float32)
+        y_test = torch.tensor(y_test.values, dtype=torch.float32)
+
+
+        train_data = train_data.reshape(train_data.shape[0], 1, train_data.shape[1])
+        x_test = x_test.reshape(x_test.shape[0], 1, x_test.shape[1])
+        train_targets = F.one_hot(train_targets.long(), num_classes=4) 
+        y_test = F.one_hot(y_test.long(), num_classes=4)
+
+        train_data = train_data.to(device) #size:Tensor(471, 1, 490)
+        x_test = x_test.to(device) #size:Tensor(118, 1,  490)
+        train_targets = train_targets.to(device)#size:Tensor(471, 4)
+        y_test = y_test.to(device) #size:Tensor(118, 4) 
+
+        return train_data, x_test, train_targets, y_test
 
 # %%
