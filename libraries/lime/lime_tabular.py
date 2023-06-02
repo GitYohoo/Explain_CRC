@@ -16,11 +16,11 @@ from sklearn.utils import check_random_state
 from pyDOE2 import lhs
 from scipy.stats.distributions import norm
 
-from lime.discretize import QuartileDiscretizer
-from lime.discretize import DecileDiscretizer
-from lime.discretize import EntropyDiscretizer
-from lime.discretize import BaseDiscretizer
-from lime.discretize import StatsDiscretizer
+from libraries.lime.discretize import QuartileDiscretizer
+from libraries.lime.discretize import DecileDiscretizer
+from libraries.lime.discretize import EntropyDiscretizer
+from libraries.lime.discretize import BaseDiscretizer
+from libraries.lime.discretize import StatsDiscretizer
 # from lime.discretize import DensityDiscretizer
 from sklearn.neighbors import KernelDensity
 import numpy as np

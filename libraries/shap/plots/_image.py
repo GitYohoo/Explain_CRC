@@ -7,7 +7,7 @@ from typing import Optional
 import numpy as np
 from matplotlib.colors import Colormap
 
-from shap._explanation import Explanation
+from libraries.shap._explanation import Explanation
 from ..utils import ordinal_str
 
 try:

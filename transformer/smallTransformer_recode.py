@@ -257,6 +257,8 @@ y_true = y_test.cpu().numpy()
 # print(confusion_matrix(y_true,y_pred))
 # print(classification_report(y_true, y_pred, target_names=['AWNP', 'AWP', 'DWNP', 'DWP']))
 # %%
+import sys
+sys.path.append('..')
 from libraries.lime import lime_tabular
 
 model = model.to("cpu")
