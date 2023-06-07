@@ -14,15 +14,15 @@ def count_exp(org_path, count_path):
         for file in files:
             if file.endswith('.csv'):
                 df = pd.read_csv(os.path.join(org_path, file), encoding='gbk')
-                for i in range(0, 4):
+                for i in range(0, 10):
                     col = df.iloc[i, 1]
                     contribution = df.iloc[i, 2]
-                    if int(contribution) > 0:
+                    if contribution > 0:
                         if col in char_count_positive:
                             char_count_positive[col] += 1
                         else:
                             char_count_positive[col] = 1
-                    if int(contribution) < 0:
+                    if contribution < 0:
                         if col in char_count_negative:
                             char_count_negative[col] += 1
                         else:
@@ -78,7 +78,7 @@ def sum_all(sum_path):
         labels_df = pd.concat([labels_df, pd.read_csv(csv_file, encoding='gbk')], axis=1)
 
     # 将拼接后的DataFrame保存为labels.csv
-    headers = ['AWNP','+','AWNP','-','AWP','+','AWP','-','DWNP','+','DWNP','-','DWNP','+','DWNP','-',]
+    headers = ['AWNP','+','AWNP','-','AWP','+','AWP','-','DWNP','+','DWNP','-','DWP','+','DWP','-',]
     labels_df.to_csv(sum_path + 'labels.csv', index=False, header=headers)
 
 def quotation_marks(sum_path):

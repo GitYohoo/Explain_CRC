@@ -26,9 +26,9 @@ targets = rawdata.iloc[:, -1]
 # 取出后面的列作为特征
 data = rawdata.iloc[:, 0:-1]
 
-scaler = MinMaxScaler() # # 创建MinMaxScaler对象
-normalized_data = scaler.fit_transform(data)# # 对data进行归一化
-data = pd.DataFrame(normalized_data, columns=data.columns)# # 将归一化后的数据重新转换为DataFrame
+# scaler = MinMaxScaler() # # 创建MinMaxScaler对象
+# normalized_data = scaler.fit_transform(data)# # 对data进行归一化
+# data = pd.DataFrame(normalized_data, columns=data.columns)# # 将归一化后的数据重新转换为DataFrame
 
 # 为了提高多头注意力机制头的个数，补充四列0到data的后面
 # 创建一个包含4列零值的数组
@@ -37,6 +37,9 @@ zeros = np.zeros((data.shape[0], 4))
 zeros_df = pd.DataFrame(zeros, columns=["Zero1", "Zero2", "Zero3", "Zero4"])
 # 将零值DataFrame与原始数据data进行水平拼接
 data = pd.concat([data, zeros_df], axis=1)
+#%%
+#统计数字1占targets的比例
+print("数字1占比：", targets.value_counts()[1] / targets.shape[0])
 #%%
 # 划分训练集和测试集,训练集占80%,测试集占20%
 train_data, x_test, train_targets, y_test = train_test_split(
@@ -76,13 +79,13 @@ class Transformer(nn.Module):
         self.fc = nn.Linear(
             input_dim, output_dim
         )  # 初始化一个全连接层,用于将Transformer编码器的输出映射到所需的输出维度
-
+       
     def forward(self, x):
         x = self.transformer_encoder(x)  # 传入Transformer编码器
         x = self.dropout(x)  # 传入Dropout层
         attention_weights = self.calculate_attention_weights(x)  # 计算注意力权重
         x = self.fc(x)  # 传入全连接层
-        return x, attention_weights
+        return x
 
     def calculate_attention_weights(self, x):
         attn_weights = []
@@ -104,7 +107,7 @@ class Transformer(nn.Module):
     def predict_proba(self, x):
         if isinstance(x, np.ndarray):
             x = torch.tensor(x, dtype=torch.float32)  # 如果x是numpy数组,则转换为tensor
-        x = self.forward(x)[0]
+        x = self.forward(x)
         x = F.softmax(abs(x), dim=1)  # 计算模型输出的概率分布
         x = x.detach().numpy()  # 将张量转换为numpy数组
         return x
@@ -196,7 +199,7 @@ for epoch in range(epochs):
         optimizer.zero_grad()  # 梯度重置
         data1 = data1.to(torch.float32)  # 转换为浮点数tensor
         target = target.squeeze()  # 压缩目标值到1D
-        output, attention_weights = model(data1)  # 计算输出和损失
+        output = model(data1)  # 计算输出和损失
         loss = criterion(output, target)
         loss.backward(torch.ones_like(loss))
         optimizer.step()
@@ -226,7 +229,7 @@ plt.show()
 #%%
 model.eval()  # 设置模型为评估模式以禁用dropout
 with torch.no_grad():
-    output, _ = model(x_test)
+    output = model(x_test)
     pred = output.argmax(dim=1)  # 获取每个样本的预测类
     accuracy = (pred == y_test).sum().item() / len(y_test)  # 计算模型在测试集上的准确率
     print(f"Accuracy: {accuracy}")
@@ -235,32 +238,32 @@ with torch.no_grad():
 #%%
 # 预测x_test[sample]的类别
 sample = 115
-model.eval()  # 设置模型为评估模式以禁用dropout
-with torch.no_grad():
-    output, attention_weights = model(x_test[sample].unsqueeze(0))
-    pred = output.argmax(dim=1)
-    print(f"pred: {pred}")
-    print(f"y_test[sample]: {y_test[sample]}")
-model.plot_attention_weights([w.cpu().numpy().T for w in attention_weights])
+# model.eval()  # 设置模型为评估模式以禁用dropout
+# with torch.no_grad():
+#     output = model(x_test[sample].unsqueeze(0))
+#     pred = output.argmax(dim=1)
+#     print(f"pred: {pred}")
+#     print(f"y_test[sample]: {y_test[sample]}")
+# model.plot_attention_weights([w.cpu().numpy().T for w in attention_weights])
 
 #%%
 # # 绘制混淆矩阵
 y_pred = pred.cpu().numpy()
 y_true = y_test.cpu().numpy()
-# cm = confusion_matrix(y_true, y_pred)
-# sns.heatmap(cm, annot=True, cmap='Blues')
-# #创建一个新的figure
-# plt.figure()
-# plt.xlabel('Predicted labels')
-# plt.ylabel('True labels')
-# plt.show()
-# print(confusion_matrix(y_true,y_pred))
-# print(classification_report(y_true, y_pred, target_names=['AWNP', 'AWP', 'DWNP', 'DWP']))
+cm = confusion_matrix(y_true, y_pred)
+sns.heatmap(cm, annot=True, cmap='Blues')
+#创建一个新的figure
+plt.figure()
+plt.xlabel('Predicted labels')
+plt.ylabel('True labels')
+plt.show()
+print(confusion_matrix(y_true,y_pred))
+print(classification_report(y_true, y_pred, target_names=['AWNP', 'AWP', 'DWNP', 'DWP']))
 # %%
 import sys
 sys.path.append('..')
 from libraries.lime import lime_tabular
-
+sample = 114
 model = model.to("cpu")
 x_test = x_test.to("cpu")
 # Create explainer
@@ -291,39 +294,101 @@ exp = explainer.explain_instance(
     model.predict_proba,
     num_features=num_features,
     top_labels=1,
-    num_samples=5000,
+    num_samples=10000,
     distance_metric="euclidean",
     model_regressor=None,
 )
 # Show explanation
-exp.show_in_notebook(show_table=True, show_all=False)
+# exp.show_in_notebook(show_table=True, show_all=False)
 # %%
-feature_names = data.columns.values.tolist()
+# feature_names = data.columns.values.tolist()
 
-avg_attn = []
-for attn in attention_weights:
-    # avg_attn.append(torch.sum(attn, dim=0))
-    avg_attn.append(attn.reshape(-1))
+# avg_attn = []
+# for attn in attention_weights:
+#     # avg_attn.append(torch.sum(attn, dim=0))
+#     avg_attn.append(attn.reshape(-1))
 
-for layer_avg_attn in avg_attn:
-    #画柱状图
-    layer_avg_attn = abs(layer_avg_attn) # 取绝对值
-    plt.bar(feature_names, layer_avg_attn.cpu().numpy())
+# for layer_avg_attn in avg_attn:
+#     #画柱状图
+#     layer_avg_attn = abs(layer_avg_attn) # 取绝对值
+#     plt.bar(feature_names, layer_avg_attn.cpu().numpy())
 
-    # plt.plot(feature_names, layer_avg_attn.cpu().numpy())
+#     # plt.plot(feature_names, layer_avg_attn.cpu().numpy())
     
-    # 找出每层的最大值的前10个的索引
-    topk = torch.topk(layer_avg_attn, k=10, dim=0)
-    print(topk.indices)
-    # 打印索引对应的特征名
-    print([feature_names[i] for i in topk.indices])
-plt.show()
+#     # 找出每层的最大值的前10个的索引
+#     topk = torch.topk(layer_avg_attn, k=10, dim=0)
+#     print(topk.indices)
+#     # 打印索引对应的特征名
+#     print([feature_names[i] for i in topk.indices])
+# plt.show()
 
-# %%用shap对模型进行
+# # %%用shap对模型进行
+# import sys
+# sys.path.append("..")
+# import libraries.shap as shap
+# shap.initjs()
+# # select a set of background examples to take an expectation over
+# background = x_train[np.random.choice(x_train.shape[0], 400, replace=False)]
+# background = torch.from_numpy(background)
+
+# exp = shap.DeepExplainer(model, background)
+# shap_values = exp.shap_values(x_test[sample].unsqueeze(0))
+# # shap.plots.waterfall(shap_values[0])
+
+# # %%
+# shap.summary_plot(shap_values, x_test[sample].unsqueeze(0), feature_names=feature_names, class_names=class_names)
+
+# # %%
+# from libraries.shap.plots import _waterfall
+# a = exp.expected_value
+# x = exp.expected_value.argmax()
+# _waterfall.waterfall_legacy(x, shap_values[x].squeeze(0), feature_names=feature_names, max_display=10, show=True)
+# %%统计结果
 import sys
-sys.path.append("..")
-import libraries.shap
-from libraries.shap import links
-libraries.shap.initjs()
+sys.path.append('..')
+from Save_exp import save_exp
+print('开始解释....')
+# sample = [46]
+sample = list(range(len(x_test_np)))
+for i in sample:
+    output = []
+    # truelabel = target[i]
+    # print("该样本的真实标签为", truelabel)
+    # output.append("该样本的真实标签为"+str(truelabel))
+    # predlabel = wsm.predict(x_train[i].reshape(1, -1))
+    # predlabel = int(predlabel)
+    # print("该样本的预测标签为", predlabel)
+    # output.append("该样本的预测标签为"+str(predlabel))
+    # if predlabel != truelabel:
+    #     continue
+    exp = explainer.explain_instance(
+        x_test_np[i],
+        model.predict_proba,
+        num_features=num_features,
+        top_labels=4,
+        num_samples=5000,
+        distance_metric="euclidean",
+        model_regressor=None,
+    )
 
+    # exp.show_in_notebook(show_table=True, show_all=False)
+
+    for label in range(4): 
+        csv_path = r'D:\Desktop\Explain_CEC_Recording\exp_result\label_{}\\test_{}.csv'.format(label+1, i)
+        html_path = r'D:\Desktop\Explain_CEC_Recording\exp_result\html\\test_{}.html'.format(i)
+        save_exp(exp, i, output, label, csv_path, html_path)
+# %%
+import sys
+sys.path.append('..')
+from Count_exp import count_exp
+org_path = r'D:\Desktop\Explain_CEC_Recording\exp_result\label_{}\\'
+count_path = r'D:\Desktop\Explain_CEC_Recording\exp_result\\'
+count_exp(org_path, count_path)
+# %%
+from Count_exp import sum_all
+sum_path = r'D:\Desktop\Explain_CEC_Recording\exp_result\\'
+sum_all(sum_path)
+
+from Count_exp import quotation_marks
+quotation_marks(sum_path)
 # %%
