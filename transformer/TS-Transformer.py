@@ -8,7 +8,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score, recall_score, precision_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
@@ -26,9 +26,9 @@ targets = rawdata.iloc[:, -1]
 # 取出后面的列作为特征
 data = rawdata.iloc[:, 0:-1]
 
-# scaler = MinMaxScaler() # # 创建MinMaxScaler对象
-# normalized_data = scaler.fit_transform(data)# # 对data进行归一化
-# data = pd.DataFrame(normalized_data, columns=data.columns)# # 将归一化后的数据重新转换为DataFrame
+scaler = MinMaxScaler() # # 创建MinMaxScaler对象
+normalized_data = scaler.fit_transform(data)# # 对data进行归一化
+data = pd.DataFrame(normalized_data, columns=data.columns)# # 将归一化后的数据重新转换为DataFrame
 
 # 为了提高多头注意力机制头的个数，补充四列0到data的后面
 # 创建一个包含4列零值的数组
@@ -259,6 +259,43 @@ plt.ylabel('True labels')
 plt.show()
 print(confusion_matrix(y_true,y_pred))
 print(classification_report(y_true, y_pred, target_names=['AWNP', 'AWP', 'DWNP', 'DWP']))
+
+#计算F1值
+f1 = f1_score(y_true, y_pred, average='weighted')
+print('F1 score:', f1)
+#计算召回率
+recall = recall_score(y_true, y_pred, average='weighted')
+print('Recall:', recall)
+#计算精确率
+precision = precision_score(y_true, y_pred, average='weighted')
+print('Precision:', precision)
+
+#%%
+# import matplotlib.pyplot as plt
+# from sklearn.metrics import roc_curve, auc
+# #计算ROC曲线的值
+# fpr, tpr, thresholds = roc_curve(y_true, y_pred)
+# #计算AUC的值
+# roc_auc = auc(fpr, tpr)
+# #绘制ROC曲线
+# plt.figure()
+# lw = 2
+# plt.figure(figsize=(10,10))
+# plt.plot(fpr, tpr, color='darkorange',
+#             lw=lw, label='ROC curve (area = %0.2f)'% roc_auc)
+# plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+# #设置x轴和y轴的取值范围
+# plt.xlim([0.0, 1.0])
+# plt.ylim([0.0, 1.05])
+# #设置x轴和y轴的标签
+# plt.xlabel('False Positive Rate')
+# plt.ylabel('True Positive Rate')
+# #设置标题
+# plt.title('Receiver operating characteristic example')
+# #显示图例
+# plt.legend(loc="lower right")
+# plt.show()
+
 # %%
 import sys
 sys.path.append('..')
