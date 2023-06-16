@@ -7,7 +7,6 @@ from torchvision.ops import focal_loss
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, f1_score, recall_score, precision_score
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -17,49 +16,10 @@ import math
 import sys
 from sklearn.preprocessing import MinMaxScaler
 sys.path.append("..")
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# 加载数据的同时去掉第一行,第一行是特征名称
-rawdata = pd.read_csv("..\\data\\new_data.csv", header=0)
-# 取出第一列作为标签
-targets = rawdata.iloc[:, -1]
-# 取出后面的列作为特征
-data = rawdata.iloc[:, 0:-1]
-
-scaler = MinMaxScaler() # # 创建MinMaxScaler对象
-normalized_data = scaler.fit_transform(data)# # 对data进行归一化
-data = pd.DataFrame(normalized_data, columns=data.columns)# # 将归一化后的数据重新转换为DataFrame
-
-# 为了提高多头注意力机制头的个数，补充四列0到data的后面
-# 创建一个包含4列零值的数组
-zeros = np.zeros((data.shape[0], 4))
-# 将零值数组转换为DataFrame
-zeros_df = pd.DataFrame(zeros, columns=["Zero1", "Zero2", "Zero3", "Zero4"])
-# 将零值DataFrame与原始数据data进行水平拼接
-data = pd.concat([data, zeros_df], axis=1)
-#%%
-#统计数字1占targets的比例
-print("数字1占比：", targets.value_counts()[1] / targets.shape[0])
-#%%
-# 划分训练集和测试集,训练集占80%,测试集占20%
-train_data, x_test, train_targets, y_test = train_test_split(
-    data, targets, test_size=0.2
-)
-
-# 标签值减1
-train_targets = train_targets - 1
-y_test = y_test - 1
-# 转化为tensor格式
-train_data = torch.tensor(train_data.values, dtype=torch.float32)
-x_test = torch.tensor(x_test.values, dtype=torch.float32)
-train_targets = torch.tensor(train_targets.values, dtype=torch.float32)
-y_test = torch.tensor(y_test.values, dtype=torch.float32)
-
-train_data = train_data.to(device)
-x_test = x_test.to(device)
-train_targets = train_targets.to(device)
-y_test = y_test.to(device)
-
+import read_data
+Data = read_data.Read_data()
+train_data, x_test, train_targets, y_test = Data.Transformer_data_286(Normalization=True, data2tensor=True)
 # 定义Transformer模型
 class Transformer(nn.Module):
     def __init__(
@@ -141,43 +101,73 @@ class CustomDataset(Dataset):
         # 将目标值转换为1维张量的类索引形式
         return x, y.flatten().long()
 
-
-# 定义Focal Loss损失函数
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=1, gamma=2, reduction="mean"):
+    def __init__(self, alpha=None, gamma=2.0):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
-        self.reduction = reduction
 
     def forward(self, inputs, targets):
-        ce_loss = F.cross_entropy(inputs, targets, reduction="none")
-        pt = torch.exp(-ce_loss)
-        focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
+        # 将输入进行softmax处理
+        inputs = F.softmax(inputs, dim=1)
+        
+        # 创建一个与输入大小相同的零张量
+        loss = torch.zeros(inputs.size(0)).to(inputs.device)
+        
+        # 对每个样本进行计算损失
+        for i in range(inputs.size(0)):
+            # 获取当前样本的预测概率和目标标签
+            pred = inputs[i]
+            target = targets[i]
+            
+            # 计算交叉熵损失
+            ce_loss = -torch.log(pred[target])
+            
+            # 获取当前类别的权重系数alpha
+            if self.alpha is not None:
+                alpha = self.alpha[target]
+            else:
+                alpha = 1.0  # 如果未提供alpha，则将其设置为1.0
+            
+            # 计算权重
+            weight = (1 - pred[target]).pow(self.gamma)
+            weighted_loss = alpha * weight * ce_loss
+            
+            # 将权重应用于损失
+            loss[i] = weighted_loss
+        
+        # 返回平均损失
+        return loss.mean()
 
-        if self.reduction == "mean":
-            return focal_loss.mean()
-        elif self.reduction == "sum":
-            return focal_loss.sum()
-        else:
-            return focal_loss
+#计算train_targets中各类的比例
+def get_ratio(train_targets):
+    ratio = []
+    for i in range(4):
+        ratio.append((train_targets == i).sum() / len(train_targets))
+    return ratio
 
-
+ratio = get_ratio(train_targets.cpu())
+ratio = 1 - torch.stack(ratio).numpy()
+#归一化到【0-5】
+# ratio = ratio / ratio.max() * 5
+#%%
 epochs = 150
 # 初始化模型,优化器和损失函数
 model = Transformer(
     input_dim=train_data.shape[1],
     output_dim=4,
-    hidden_dim=128,
+    hidden_dim=256,
     num_layers=2,
     num_heads=10,
-    dropout=0.5,
+    dropout=0.2,
 )
 optimizer = optim.Adam(model.parameters(), lr=0.0001)
 criterion = nn.CrossEntropyLoss(reduction="none")  # 交叉熵损失函数
-# criterion = FocalLoss(gamma=2, alpha=1)
+# criterion = FocalLoss(gamma=2, alpha=ratio )  # Focal Loss损失函数
 train_dataset = CustomDataset(train_data, train_targets)
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)  # 创建数据集和数据加载器
+test_dataset = CustomDataset(x_test, y_test)
+test_loader = DataLoader(test_dataset, batch_size=64, shuffle=True)
 lr_scheduler = optim.lr_scheduler.OneCycleLR(
     optimizer,
     max_lr=0.001,
@@ -187,10 +177,11 @@ lr_scheduler = optim.lr_scheduler.OneCycleLR(
 )  # 定义学习率策略
 
 model.to(device)
-
-train_losses = []
+train_losses = [] 
 train_accs = []
 attention_weights = []
+test_accs = []
+test_losses = []
 for epoch in range(epochs):
     running_loss = 0.0
     correct = 0
@@ -209,24 +200,34 @@ for epoch in range(epochs):
         total += target.size(0)
         correct += (predicted == target).sum().item()
         attention_weights.append(attention_weights)
-
     epoch_loss = running_loss / len(train_loader)
     epoch_acc = correct / total
     train_losses.append(epoch_loss)
     train_accs.append(epoch_acc)
 
+    with torch.no_grad():
+        output_test = model(x_test)
+        pred = output_test.argmax(dim=1)  # 获取每个样本的预测类
+        accuracy = (pred == y_test).sum().item() / len(y_test)  # 计算模型在测试集上的准确率
+        # 计算测试集上的损失
+        y_test = y_test.long()
+        loss = criterion(output_test, y_test)
+        test_losses.append(loss.mean().item())
+        test_accs.append(accuracy)
     # 打印周期统计信息
     print(
-        f"Epoch {epoch+1}: Loss = {epoch_loss:.4f}, Accuracy = {epoch_acc:.4f}, Current lr: {lr_scheduler.get_last_lr()[0]}"
+        f"Epoch {epoch+1}: Loss = {epoch_loss:.4f}, Accuracy = {epoch_acc:.4f}, Test Accuracy: {accuracy}"
     )
 
 # 绘制训练曲线
 plt.plot(train_losses, label="Training Loss")
 plt.plot(train_accs, label="Training Accuracy")
+plt.plot(test_accs, label="Test Accuracy")
+# plt.plot(test_losses, label="Test Loss")
 plt.xlabel("Epoch")
 plt.legend()
 plt.show()
-#%%
+
 model.eval()  # 设置模型为评估模式以禁用dropout
 with torch.no_grad():
     output = model(x_test)
@@ -235,7 +236,6 @@ with torch.no_grad():
     print(f"Accuracy: {accuracy}")
 # model.plot_attention_weights([w.cpu().numpy() for w in _])
 
-#%%
 # 预测x_test[sample]的类别
 sample = 115
 # model.eval()  # 设置模型为评估模式以禁用dropout
@@ -246,29 +246,28 @@ sample = 115
 #     print(f"y_test[sample]: {y_test[sample]}")
 # model.plot_attention_weights([w.cpu().numpy().T for w in attention_weights])
 
-#%%
 # # 绘制混淆矩阵
 y_pred = pred.cpu().numpy()
 y_true = y_test.cpu().numpy()
-cm = confusion_matrix(y_true, y_pred)
-sns.heatmap(cm, annot=True, cmap='Blues')
+# cm = confusion_matrix(y_true, y_pred)
+# sns.heatmap(cm, annot=True, cmap='Blues')
 #创建一个新的figure
-plt.figure()
-plt.xlabel('Predicted labels')
-plt.ylabel('True labels')
-plt.show()
+# plt.figure()
+# plt.xlabel('Predicted labels')
+# plt.ylabel('True labels')
+# # plt.show()
 print(confusion_matrix(y_true,y_pred))
 print(classification_report(y_true, y_pred, target_names=['AWNP', 'AWP', 'DWNP', 'DWP']))
 
-#计算F1值
-f1 = f1_score(y_true, y_pred, average='weighted')
-print('F1 score:', f1)
-#计算召回率
-recall = recall_score(y_true, y_pred, average='weighted')
-print('Recall:', recall)
-#计算精确率
-precision = precision_score(y_true, y_pred, average='weighted')
-print('Precision:', precision)
+# #计算F1值
+# f1 = f1_score(y_true, y_pred, average='weighted')
+# print('F1 score:', f1)
+# #计算召回率
+# recall = recall_score(y_true, y_pred, average='weighted')
+# print('Recall:', recall)
+# #计算精确率
+# precision = precision_score(y_true, y_pred, average='weighted')
+# print('Precision:', precision)
 
 #%%
 # import matplotlib.pyplot as plt
