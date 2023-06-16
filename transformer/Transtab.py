@@ -18,74 +18,36 @@ import transtab
 import warnings
 warnings.filterwarnings('ignore')
 
-# # 加载数据的同时去掉第一行,第一行是特征名称
-# rawdata = pd.read_csv('..\\data\\new_data.csv', header=0)
-# #取出第一列作为标签
-# targets = rawdata.iloc[:,-1] 
-# #取出后面的列作为特征
-# data = rawdata.iloc[:,0:-1]
-
-# # scaler = MinMaxScaler() # # 创建MinMaxScaler对象
-# # normalized_data = scaler.fit_transform(data)# # 对data进行归一化
-# # data = pd.DataFrame(normalized_data, columns=data.columns)# # 将归一化后的数据重新转换为DataFrame
-
-# #为了提高多头注意力机制头的个数，补充四列0到data的后面
-# # 创建一个包含4列零值的数组
-# zeros = np.zeros((data.shape[0], 4))
-# # 将零值数组转换为DataFrame
-# zeros_df = pd.DataFrame(zeros, columns=['Zero1', 'Zero2', 'Zero3', 'Zero4'])
-# # 将零值DataFrame与原始数据data进行水平拼接
-# data = pd.concat([data, zeros_df], axis=1)
-# #将4列零值转化为int
-# data[['Zero1', 'Zero2', 'Zero3', 'Zero4']] = data[['Zero1', 'Zero2', 'Zero3', 'Zero4']].astype('int')
-# columns = data.columns
-# # 挑选出[231, 265, 266, 267, 280]列作为二值特征
-# binary_columns = columns[[231, 265, 266, 267, 280]]
-# #将二值特征转化为0-1
-# data[binary_columns] = data[binary_columns].astype('bool').astype('int')
-# # 划分训练集和测试集,训练集占80%,测试集占20%
-# train_data, x_test, train_targets, y_test = train_test_split(data, targets, test_size=0.2)
-# # 标签值减1
-# train_targets = train_targets - 1 
-# y_test = y_test - 1 
-# # 转化为tensor格式
-# train_data = torch.tensor(train_data.values, dtype=torch.float32)
-# x_test = torch.tensor(x_test.values, dtype=torch.float32)
-# train_targets = torch.tensor(train_targets.values, dtype=torch.float32)
-# y_test = torch.tensor(y_test.values, dtype=torch.float32)
-from read_data import Read_data
-data = Read_data()
-train_data, x_test, train_targets, y_test = data.Transformer_data()
+import read_data
+Data = read_data.Read_data()
+# train_data, x_test, train_targets, y_test = Data.Transformer_data_486()
+train_data, x_test, train_targets, y_test = Data.Transformer_data_286(Normalization=True, zero=True, data2tensor=False)
 #%%
-#其他列作为数值特征
-# numerical_columns = columns.drop(binary_columns)
+train_x = train_data
+train_y = pd.Series(train_targets)
+trainset = [(train_x, train_y)]
+
+y_test = pd.Series(y_test)
+testset = [(x_test, y_test)]
+#%%
 num_class = 4
 num_attention_head = 8
-device='cuda:0'
+# binary_columns=[231, 265, 266, 267, 280]
+# numerical_columns=[i for i in range(286) if i not in binary_columns]
+# hidden_dropout_prob=0.5
 model = transtab.build_classifier(
-    # binary_columns=binary_columns, numerical_columns=numerical_columns, 
-                                  num_class=num_class, num_attention_head = num_attention_head, 
-                                  device=device)
-# %%
-# train_x = pd.DataFrame(train_data)
-# train_y = pd.Series(train_targets)
-# trainset = [(train_x, train_y)]
-trainset = [(train_data, train_targets)]
-
-# x_test = pd.DataFrame(x_test)
-# y_test = pd.Series(y_test)
-# testset = [(x_test, y_test)]
-testset = [(x_test, y_test)]
-
+    # numerical_columns=numerical_columns,binary_columns=binary_columns,
+                                    num_class=num_class, num_attention_head = num_attention_head, 
+                                    )
+                                  
 training_arguments = {
-    'num_epoch':100,
+    'num_epoch':25,
     'valset': None,
     'eval_metric':'val_loss',
-    'eval_less_is_better':False,
+    'eval_less_is_better':True,
     'output_dir':'./checkpoint',
     'batch_size': 64,
-    'learning_rate': 0.0001,
-
+    'lr': 0.001,
     }
 transtab.train(model, trainset, **training_arguments)
 # %%
@@ -105,64 +67,77 @@ sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
 plt.xlabel('Predicted label')
 plt.ylabel('True label')
 plt.show()
+from sklearn.metrics import f1_score, recall_score, precision_score
+#计算F1值
+f1 = f1_score(y_test, ypred, average='weighted')
+print('F1 score:', f1)
+#计算召回率
+recall = recall_score(y_test, ypred, average='weighted')
+print('Recall:', recall)
+#计算精确率
+precision = precision_score(y_test, ypred, average='weighted')
+print('Precision:', precision)
+
 #打印训练集准确率
 train_pred = transtab.predict(clf = model, x_test = train_data, y_test=train_targets)
 train_pred = np.argmax(train_pred, axis=1)
 print("train accuracy: ", np.mean(train_pred == train_targets))
 print(classification_report(train_targets, train_pred))
 
-# %%
-import sys
-sys.path.append("..")
-from libraries.lime import lime_tabular
-sample = 10
-model = model.to("cpu")
-# Create explainer
-num_features = 10
-class_names = ["AWNP", "AWP", "DWNP", "DWP"]
-feature_names = data.columns.values.tolist()
-categorical_features = [231, 265, 266, 267, 280]
-x_train = np.array(train_data)
 
-class predict_proba():
-    def __init__(self, model, y_test.iloc[sample]):
-        self.model = model
-        self.y_test = y_test
 
-    def predict_proba(self, x):
-        #转化为dataframe
-        x = pd.DataFrame(x)
-        pred = transtab.predict(clf = self.model, x_test = x, y_test=self.y_test, return_loss=False)
-        return pred
+# # %%
+# import sys
+# sys.path.append("..")
+# from libraries.lime import lime_tabular
+# sample = 10
+# model = model.to("cpu")
+# # Create explainer
+# num_features = 10
+# class_names = ["AWNP", "AWP", "DWNP", "DWP"]
+# feature_names = data.columns.values.tolist()
+# categorical_features = [231, 265, 266, 267, 280]
+# x_train = np.array(train_data)
+
+# class predict_proba():
+#     def __init__(self, model, y_test.iloc[sample]):
+#         self.model = model
+#         self.y_test = y_test
+
+#     def predict_proba(self, x):
+#         #转化为dataframe
+#         x = pd.DataFrame(x)
+#         pred = transtab.predict(clf = self.model, x_test = x, y_test=self.y_test, return_loss=False)
+#         return pred
     
-pred = predict_proba(model, y_test[sample])
+# pred = predict_proba(model, y_test[sample])
 
-explainer = lime_tabular.LimeTabularExplainer(
-    x_train,
-    discretize_continuous=True,
-    discretizer="quartile",
-    kernel_width=None,
-    verbose=True,
-    feature_names=feature_names,
-    mode="classification",
-    class_names=class_names,
-    training_labels=train_y,
-    feature_selection="lasso_path",
-    categorical_features=categorical_features,
-)
+# explainer = lime_tabular.LimeTabularExplainer(
+#     x_train,
+#     discretize_continuous=True,
+#     discretizer="quartile",
+#     kernel_width=None,
+#     verbose=True,
+#     feature_names=feature_names,
+#     mode="classification",
+#     class_names=class_names,
+#     training_labels=train_y,
+#     feature_selection="lasso_path",
+#     categorical_features=categorical_features,
+# )
 
-# Explain instance
-x_test_np = np.array(x_test)
-exp = explainer.explain_instance(
-    x_test_np[sample],
-    pred.predict_proba,
-    num_features=num_features,
-    top_labels=1,
-    num_samples=5000,
-    distance_metric="euclidean",
-    model_regressor=None,
-)
-# Show explanation
-exp.show_in_notebook(show_table=True, show_all=False)
-# %%
-pred.predict_proba(x_test_np[sample])
+# # Explain instance
+# x_test_np = np.array(x_test)
+# exp = explainer.explain_instance(
+#     x_test_np[sample],
+#     pred.predict_proba,
+#     num_features=num_features,
+#     top_labels=1,
+#     num_samples=5000,
+#     distance_metric="euclidean",
+#     model_regressor=None,
+# )
+# # Show explanation
+# exp.show_in_notebook(show_table=True, show_all=False)
+# # %%
+# pred.predict_proba(x_test_np[sample])

@@ -122,8 +122,8 @@ class FTTransformer(nn.Module):
         dim_head = 16,
         dim_out = 1,
         num_special_tokens = 2,
-        attn_dropout = 0.,
-        ff_dropout = 0.
+        attn_dropout = 0.1,
+        ff_dropout = 0.1
     ):
         super().__init__()
         assert all(map(lambda n: n > 0, categories)), 'number of each category must be positive'

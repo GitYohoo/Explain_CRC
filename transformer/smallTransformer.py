@@ -22,7 +22,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 from read_data import Read_data
 data = Read_data()
-DATA, targets = Read_data().Transformer_data(1)
+DATA, targets = Read_data().Transformer_data_486_Kmeans(1)
 #%%
 # 定义Transformer分类模型
 class TransformerClassifier(nn.Module):
@@ -99,7 +99,7 @@ input_dim = DATA.shape[2]
 output_dim = 4  
 num_layers = 3
 hidden_dim = 256
-num_heads = 10
+num_heads = 5
 dropout = 0.1
 batch_size = 64
 learning_rate = 0.0001
@@ -109,7 +109,6 @@ num_epochs = 65
 targets = torch.from_numpy(targets).long()  # 转换为LongTensor 
 dataset = MyDataset(data, targets)
 
- 
 train_data, test_data, train_targets, test_targets = train_test_split(data, targets, test_size=0.2, random_state=42)
 train_data = train_data.to(device)
 test_data = test_data.to(device)
@@ -158,13 +157,13 @@ plt.show()
 
 # %%
 # # 绘制混淆矩阵
-y_pred = np.array(pred)
-y_true = test_targets.cpu().numpy()
-cm = confusion_matrix(y_true, y_pred)
-sns.heatmap(cm, annot=True, cmap='Blues')
-plt.xlabel('Predicted labels')
-plt.ylabel('True labels')
-plt.show()
-print(confusion_matrix(y_true,y_pred))
-print(classification_report(y_true, y_pred, target_names=['AWNP', 'AWP', 'DWNP', 'DWP']))
+# y_pred = np.array(pred)
+# y_true = test_targets.cpu().numpy()
+# cm = confusion_matrix(y_true, y_pred)
+# sns.heatmap(cm, annot=True, cmap='Blues')
+# plt.xlabel('Predicted labels')
+# plt.ylabel('True labels')
+# plt.show()
+# print(confusion_matrix(y_true,y_pred))
+# print(classification_report(y_true, y_pred, target_names=['AWNP', 'AWP', 'DWNP', 'DWP']))
 # %%

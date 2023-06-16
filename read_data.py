@@ -112,4 +112,33 @@ class Read_data(object):
 
         return train_data, x_test, train_targets, y_test
 
+    def Transformer_data_286(self, Normalization=True, data2tensor=False, zero=True):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # 读取数据,去除第一行
+        data = pd.read_csv("data\\new_data.csv", header=1)
+        # 取最后一列作为标签
+        targets = data.iloc[:, -1]  
+        # 其他列为特征
+        features = data.iloc[:, :-1]  
+        
+        if Normalization:
+            scaler = MinMaxScaler()
+            features = scaler.fit_transform(features)
+            features = pd.DataFrame(features, columns=data.columns[:-1])
+        if zero:
+            # 添加4列全0特征
+            zeros = np.zeros((features.shape[0], 4))
+            zeros_df = pd.DataFrame(zeros, columns=["f1", "f2", "f3", "f4"])
+            features = pd.concat([features, zeros_df], axis=1)
+        
+        # 打乱数据并划分训练集和测试集, 80%训练,20%测试
+        train_features, x_test, train_targets, y_test = train_test_split(features, targets, test_size=0.2, shuffle=True)
+        # 标签减1
+        train_targets -= 1
+        y_test -= 1
+        if data2tensor:
+            # 转为Tensor
+            train_features, x_test, train_targets, y_test = map(lambda x: torch.tensor(x.values, dtype=torch.float32).to(device), 
+                                                            [train_features, x_test, train_targets, y_test])
+        return train_features, x_test, train_targets, y_test
 # %%
